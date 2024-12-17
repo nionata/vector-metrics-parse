@@ -106,6 +106,7 @@ fn count_metric_types(metrics: &[SerdeObject]) -> HashMap<String, usize> {
         ("gauge".to_string(), 0),
         ("counter".to_string(), 0),
         ("histogram".to_string(), 0),
+        ("distribution".to_string(), 0),
     ]);
 
     let metric_type_keys = metric_types.keys().cloned().collect::<Vec<_>>();
@@ -120,7 +121,12 @@ fn count_metric_types(metrics: &[SerdeObject]) -> HashMap<String, usize> {
             }
         }
 
-        println!("Unknown metric type: {:?}", metric);
+        println!(
+            "Unknown metric: {}",
+            metric
+                .get("name")
+                .expect("'name' key to have a string value")
+        );
     }
 
     metric_types
