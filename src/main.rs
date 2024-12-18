@@ -6,9 +6,19 @@ use std::path::{Path, PathBuf};
 type SerdeObject = Map<String, Value>;
 
 fn main() {
-    let path = std::env::args().nth(1).expect("Please provide a path");
+    let mut args = std::env::args();
 
-    println!("Crawling {}", path);
+    let path = args
+        .nth(1)
+        .expect("first argument to be a file path like '/home/user/'");
+    let write_unique = args.nth(0).unwrap_or_else(|| "false".to_string());
+
+    let write_unique = match write_unique.as_str() {
+        "true" => true,
+        "false" => false,
+        _ => panic!("Expected second argument to be 'true' or 'false'"),
+    };
+
     let start = std::time::Instant::now();
     let mut files = Vec::new();
     craw_path_for_metric_files(Path::new(&path), &mut files);
@@ -19,10 +29,10 @@ fn main() {
     let events = extract_events(&files);
     println!("Took {:?} to extract events", start.elapsed());
 
-    println!("Extracting metric events");
+    println!("Filtering metric events");
     let start = std::time::Instant::now();
-    let metrics = extract_metric_events(&events);
-    println!("Took {:?} to extract metric events", start.elapsed());
+    let metrics = filter_metric_events(&events);
+    println!("Took {:?} to filter metric events", start.elapsed());
 
     println!("Getting unique metrics");
     let start = std::time::Instant::now();
@@ -42,6 +52,10 @@ fn main() {
     println!("Metric types:");
     for (metric_type, count) in metric_types {
         println!("  {}: {}", metric_type, count);
+    }
+
+    if write_unique {
+        write_unique_metrics(&unique_metrics.into_iter().collect::<Vec<_>>());
     }
 }
 
@@ -96,7 +110,7 @@ fn extract_events(paths: &[PathBuf]) -> Vec<SerdeObject> {
     events
 }
 
-fn extract_metric_events(events: &[SerdeObject]) -> Vec<SerdeObject> {
+fn filter_metric_events(events: &[SerdeObject]) -> Vec<SerdeObject> {
     let mut metrics = Vec::new();
 
     for event in events {
@@ -154,4 +168,8 @@ fn count_metric_types(metrics: &[SerdeObject]) -> HashMap<String, usize> {
     }
 
     metric_types
+}
+
+fn write_unique_metrics(metrics: &[String]) {
+    std::fs::write("unique_metrics.txt", metrics.join("\n")).expect("write unique metrics");
 }
