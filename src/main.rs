@@ -55,7 +55,10 @@ fn main() {
     }
 
     if write_unique {
-        write_unique_metrics(&unique_metrics.into_iter().collect::<Vec<_>>());
+        write_metrics(
+            "unique_metrics.txt",
+            &unique_metrics.into_iter().collect::<Vec<_>>(),
+        );
     }
 }
 
@@ -170,6 +173,6 @@ fn count_metric_types(metrics: &[SerdeObject]) -> HashMap<String, usize> {
     metric_types
 }
 
-fn write_unique_metrics(metrics: &[String]) {
-    std::fs::write("unique_metrics.txt", metrics.join("\n")).expect("write unique metrics");
+fn write_metrics(filename: &str, metrics: &[String]) {
+    std::fs::write(filename, metrics.join("\n")).expect(&format!("to write metrics to {filename}"));
 }
