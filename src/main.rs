@@ -1,5 +1,5 @@
 use serde_json::{Map, Value};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -24,11 +24,23 @@ fn main() {
     let metrics = extract_metric_events(&events);
     println!("Took {:?} to extract metric events", start.elapsed());
 
+    println!("Getting unique metrics");
+    let start = std::time::Instant::now();
+    let unique_metrics = get_unique_metrics(&metrics);
+    println!("Took {:?} to get unique metrics", start.elapsed());
+
+    println!("Counting metric types");
+    let start = std::time::Instant::now();
+    let metric_types = count_metric_types(&metrics);
+    println!("Took {:?} to count metric types", start.elapsed());
+
     println!("Total number of files: {}", files.len());
     println!("Total number of events: {}", events.len());
     println!("Total number of metrics: {}", metrics.len());
+    println!("Total number of unique metrics: {}", unique_metrics.len());
+
     println!("Metric types:");
-    for (metric_type, count) in count_metric_types(&metrics) {
+    for (metric_type, count) in metric_types {
         println!("  {}: {}", metric_type, count);
     }
 }
@@ -99,6 +111,18 @@ fn extract_metric_events(events: &[SerdeObject]) -> Vec<SerdeObject> {
     }
 
     metrics
+}
+
+fn get_unique_metrics(metrics: &[SerdeObject]) -> HashSet<String> {
+    metrics
+        .iter()
+        .map(|metric| {
+            metric
+                .get("name")
+                .expect("'name' key to have a string value")
+                .to_string()
+        })
+        .collect::<HashSet<_>>()
 }
 
 fn count_metric_types(metrics: &[SerdeObject]) -> HashMap<String, usize> {
